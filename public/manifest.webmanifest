@@ -1,0 +1,35 @@
+{
+  "name": "MyPuppy — Made in Brazil. Raised by you.",
+  "short_name": "MyPuppy",
+  "description": "Adopt a little Brazilian dog with a big personality. A digital toy, not a chore.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8f3eb",
+  "theme_color": "#f8f3eb",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Visit my dog",
+      "short_name": "My dog",
+      "url": "/pet",
+      "description": "Open Pet Home"
+    }
+  ]
+}

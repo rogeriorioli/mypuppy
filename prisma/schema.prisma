@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String             @id @default(cuid())
+  email        String             @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  pets         Pet[]
+  sessions     Session[]
+  subscriptions PushSubscription[]
+  notificationPrefs NotificationPreference?
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Pet {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  archetype   String
+  name        String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  state       PetState?
+  actions     PetActionRecord[]
+  events      PetEventRecord[]
+  memories    PetMemory[]
+
+  @@index([userId])
+}
+
+model PetState {
+  petId           String   @id
+  pet             Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  hunger          Float
+  happiness       Float
+  energy          Float
+  affection       Float
+  hygiene         Float
+  walkNeed        Float
+  sleeping        Boolean  @default(false)
+  lastCalculatedAt DateTime
+  lastVisitAt     DateTime
+  lastActionAt    Json
+  eventHistory    Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model PetActionRecord {
+  id        String   @id @default(cuid())
+  petId     String
+  pet       Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  action    String
+  createdAt DateTime @default(now())
+
+  @@index([petId, createdAt])
+}
+
+model PetEventRecord {
+  id        String   @id @default(cuid())
+  petId     String
+  pet       Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  event     String
+  createdAt DateTime @default(now())
+
+  @@index([petId, createdAt])
+}
+
+model PetMemory {
+  id        String   @id @default(cuid())
+  petId     String
+  pet       Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([petId, createdAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model NotificationPreference {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enabled   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+}
+
+model ReactionCache {
+  id        String   @id @default(cuid())
+  cacheKey  String   @unique
+  reaction  Json
+  createdAt DateTime @default(now())
+}
+
+model leads {
+  id                   BigInt   @id @default(autoincrement())
+  nome                 String   @db.VarChar(255)
+  email                String   @unique @db.VarChar(255)
+  telefone             String?  @db.VarChar(30)
+  aceita_receber_promo Boolean  @default(false)
+  criado_em            DateTime @default(now()) @db.Timestamptz(6)
+}
