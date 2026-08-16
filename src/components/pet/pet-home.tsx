@@ -210,6 +210,7 @@ export function PetHome({ initial, user }: { initial: PetHomeData; user: { email
               <ActionButton label="Play" icon="⚽" action="PLAY" cooldown={Boolean(cooldowns.PLAY)} sleeping={sleeping} onClick={perform} />
               <ActionButton label="Rolê" icon="🦮" action="WALK" cooldown={Boolean(cooldowns.WALK)} sleeping={sleeping} onClick={perform} />
               <ActionButton label="Cafuné" icon="♡" action="CAFUNE" cooldown={Boolean(cooldowns.CAFUNE)} sleeping={sleeping} onClick={perform} />
+              <ActionButton label="Clean" icon="🧼" action="CLEAN" cooldown={Boolean(cooldowns.CLEAN)} sleeping={sleeping} onClick={perform} />
             </div>
           </section>
 

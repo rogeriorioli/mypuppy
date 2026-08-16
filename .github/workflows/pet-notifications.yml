@@ -2,7 +2,7 @@ name: Process MyPuppy notifications
 
 on:
   schedule:
-    # GitHub Actions schedules use UTC. This runs every hour.
+    # GitHub Actions schedules use UTC. This runs every hour when Actions is available.
     - cron: "0 * * * *"
   workflow_dispatch:
 

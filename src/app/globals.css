@@ -33,6 +33,8 @@ h1,h2,p { margin:0; }.onboarding h1 { max-width:390px; margin-top:12px; font-siz
 .bottom-nav button > span:first-child { font-size:30px; font-weight:400; line-height:.9; }
 .bottom-nav button > span:last-child { font-size:14px; font-weight:700; line-height:1.1; }
 .bottom-nav .nav-active { background:#f7eadb66; }
+.action-grid { grid-template-columns:repeat(3,1fr); }
+@media (min-width:520px) { .action-grid { grid-template-columns:repeat(5,1fr); } }
 .notification-prompt { position:fixed; z-index:20; top:16px; left:50%; display:flex; gap:12px; align-items:flex-start; width:calc(100% - 32px); max-width:520px; padding:15px; transform:translateX(-50%); border:1px solid #e7c79f; border-radius:16px; background:#fff3df; box-shadow:0 12px 30px #6b4e2b24; }
 .notification-prompt-icon { display:grid; place-items:center; flex:0 0 auto; width:32px; height:32px; border-radius:10px; background:#f2d19f; color:var(--orange); font-size:20px; }
 .notification-prompt strong { display:block; font-size:13px; line-height:1.3; }
