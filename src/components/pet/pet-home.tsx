@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getPetMood, type PetAction, type PetEvent, type PetState } from "@/domain/pet/engine";
 import { doPetAction } from "@/app/actions/pet";
 import { signOutAction } from "@/app/actions/auth";
@@ -52,6 +52,11 @@ interface Memory {
 }
 
 export function PetHome({ initial, user }: { initial: PetHomeData; user: { email: string; name: string } }) {
+  const browserReady = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
   const [tab, setTab] = useState<Tab>("home");
   const [state, setState] = useState<PetState>(initial.state);
   const [sleeping, setSleeping] = useState(initial.sleeping);
@@ -60,11 +65,18 @@ export function PetHome({ initial, user }: { initial: PetHomeData; user: { email
   const [memories, setMemories] = useState<Memory[]>(initial.memories);
   const [activeAction, setActiveAction] = useState<PetAction | null>(null);
   const [cooldowns, setCooldowns] = useState<Partial<Record<PetAction, number>>>({});
-  const [notifications, setNotifications] = useState(
-    () => typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted",
-  );
+  const [notifications, setNotifications] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [notificationPromptDismissed, setNotificationPromptDismissed] = useState(false);
   const refreshing = useRef(false);
+
+  useEffect(() => {
+    if (!browserReady) return;
+    const timer = window.setTimeout(() => {
+      setNotifications("Notification" in window && Notification.permission === "granted");
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [browserReady]);
 
   const refresh = useCallback(async () => {
     if (refreshing.current) return;
@@ -127,6 +139,7 @@ export function PetHome({ initial, user }: { initial: PetHomeData; user: { email
     }
     const result = await enablePushNotifications();
     setNotifications(result.ok);
+    if (result.ok) setNotificationPromptDismissed(true);
     if (result.ok) setNotice(`${initial.name} will let you know when something important happens.`);
     else if (result.reason === "denied") setNotice("No permission granted — that is completely fine too.");
     else setNotice("Push is not available here yet, but everything still works in-app.");
@@ -151,6 +164,14 @@ export function PetHome({ initial, user }: { initial: PetHomeData; user: { email
           </button>
         </div>
       </header>
+
+      {browserReady && tab === "home" && isPushSupported() && !notifications && !notificationPromptDismissed && (
+        <NotificationPrompt
+          petName={initial.name}
+          onEnable={toggleNotifications}
+          onDismiss={() => setNotificationPromptDismissed(true)}
+        />
+      )}
 
       {tab === "home" && (
         <>
@@ -202,6 +223,7 @@ export function PetHome({ initial, user }: { initial: PetHomeData; user: { email
               </small>
             </div>
           </section>
+
         </>
       )}
 
@@ -213,7 +235,7 @@ export function PetHome({ initial, user }: { initial: PetHomeData; user: { email
           userEmail={user.email}
           notifications={notifications}
           notice={notice}
-          pushSupported={isPushSupported()}
+          pushSupported={browserReady && isPushSupported()}
           onToggleNotifications={toggleNotifications}
         />
       )}
@@ -422,5 +444,21 @@ function NavButton({ active, label, icon, onClick }: { active: boolean; label: s
       <span aria-hidden="true">{icon}</span>
       <span>{label}</span>
     </button>
+  );
+}
+
+function NotificationPrompt({ petName, onEnable, onDismiss }: { petName: string; onEnable: () => void; onDismiss: () => void }) {
+  return (
+    <section className="notification-prompt" aria-label="Enable notifications">
+      <span className="notification-prompt-icon" aria-hidden="true">♧</span>
+      <div>
+        <strong>Want {petName} to call you back?</strong>
+        <p>Get a gentle nudge when something important happens.</p>
+        <div className="notification-prompt-actions">
+          <button className="small-button" onClick={onEnable}>Enable notifications</button>
+          <button className="prompt-dismiss" onClick={onDismiss}>Not now</button>
+        </div>
+      </div>
+    </section>
   );
 }
