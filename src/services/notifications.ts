@@ -124,6 +124,35 @@ export async function deliverEventNotifications(
   }
 }
 
+/** Sends a manually requested test notification to one user's active devices. */
+export async function sendTestPushNotification(userId: string, body: string = "Your MyPuppy test notification arrived. 🐾"): Promise<{ sent: number; removed: number }> {
+  if (!isPushConfigured()) return { sent: 0, removed: 0 };
+  const webpush = await getWebPush();
+  if (!webpush) return { sent: 0, removed: 0 };
+
+  const subscriptions = await prisma.pushSubscription.findMany({ where: { userId, active: true } });
+  let sent = 0;
+  let removed = 0;
+  for (const subscription of subscriptions) {
+    try {
+      await webpush.sendNotification(
+        { endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth } },
+        JSON.stringify({ title: "MyPuppy", body, url: "/pet" }),
+      );
+      sent += 1;
+    } catch (error) {
+      const statusCode = (error as { statusCode?: number })?.statusCode;
+      if (statusCode === 404 || statusCode === 410) {
+        await prisma.pushSubscription.update({ where: { id: subscription.id }, data: { active: false } });
+        removed += 1;
+      } else {
+        console.error("[push] test send failed:", error instanceof Error ? error.message : error);
+      }
+    }
+  }
+  return { sent, removed };
+}
+
 async function notificationAllowed(petId: string, event: PetEvent): Promise<boolean> {
   const marker = `${event}_NOTIFIED`;
   const last = await prisma.petEventRecord.findFirst({
