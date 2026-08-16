@@ -173,6 +173,37 @@ export async function processPetVisit(userId: string, petId: string): Promise<Vi
   return { state: result.state, sleeping: result.snapshot.sleeping, events: [], reaction: "" };
 }
 
+/**
+ * Advances every active pet without requiring the owner to open the app.
+ * Vercel Cron calls this hourly so eligible domain events can reach Push.
+ */
+export async function processBackgroundPetNotifications(now: number = Date.now()): Promise<{ processed: number; events: number }> {
+  const pets = await prisma.pet.findMany({
+    where: { active: true },
+    include: { state: true },
+  });
+  let processed = 0;
+  let events = 0;
+
+  for (const pet of pets) {
+    if (!pet.state) continue;
+    const snapshot = dbToSnapshot(pet.state, pet.createdAt.getTime());
+    const result = processTime(snapshot, now);
+    await prisma.$transaction([
+      prisma.petState.update({ where: { petId: pet.id }, data: snapshotToDb(result.snapshot) }),
+      ...result.newEvents.map((event) => prisma.petEventRecord.create({ data: { petId: pet.id, event } })),
+    ]);
+    processed += 1;
+
+    if (result.newEvents.length === 0) continue;
+    events += result.newEvents.length;
+    const personality = await loadPersonality(pet.id);
+    await deliverEventNotifications(pet.userId, pet.id, pet.name, result.newEvents, result.state, personality);
+  }
+
+  return { processed, events };
+}
+
 export interface CurrentStateDto {
   state: PetState;
   sleeping: boolean;

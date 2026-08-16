@@ -7,6 +7,7 @@ const serverEnvSchema = z.object({
   VAPID_PUBLIC_KEY: z.string().nullable(),
   VAPID_PRIVATE_KEY: z.string().nullable(),
   VAPID_SUBJECT: z.string().optional(),
+  CRON_SECRET: z.string().min(16).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -22,6 +23,7 @@ export function getServerEnv(): ServerEnv {
     VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
     VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
     VAPID_SUBJECT: process.env.VAPID_SUBJECT,
+    CRON_SECRET: process.env.CRON_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
   });
   if (!parsed.success) {
