@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { getPetMood, type PetAction, type PetEvent, type PetState } from "@/domain/pet/engine";
 import { doPetAction } from "@/app/actions/pet";
 import { signOutAction } from "@/app/actions/auth";
-import { enablePushNotifications, disablePushNotifications, isPushSupported } from "@/lib/push-client";
+import { enablePushNotifications, disablePushNotifications, hasPushSubscription, isPushSupported } from "@/lib/push-client";
 import type { PetHomeData } from "@/types/dto";
 
 type Tab = "home" | "memories" | "profile" | "settings";
@@ -73,7 +73,9 @@ export function PetHome({ initial, user }: { initial: PetHomeData; user: { email
   useEffect(() => {
     if (!browserReady) return;
     const timer = window.setTimeout(() => {
-      setNotifications("Notification" in window && Notification.permission === "granted");
+      void hasPushSubscription().then((hasSubscription) => {
+        setNotifications("Notification" in window && Notification.permission === "granted" && hasSubscription);
+      });
     }, 0);
     return () => window.clearTimeout(timer);
   }, [browserReady]);
@@ -245,7 +247,7 @@ export function PetHome({ initial, user }: { initial: PetHomeData; user: { email
         <NavButton active={tab === "home"} label="Home" icon="⌂" onClick={() => setTab("home")} />
         <NavButton active={tab === "memories"} label="Memories" icon="♡" onClick={() => setTab("memories")} />
         <NavButton active={tab === "profile"} label="Profile" icon="☼" onClick={() => setTab("profile")} />
-        <NavButton active={tab === "settings"} label="Settings" icon="⚙" onClick={() => setTab("settings")} />
+        <NavButton active={tab === "settings"} label="Settings" icon="⚙︎" onClick={() => setTab("settings")} />
       </nav>
     </main>
   );

@@ -20,6 +20,13 @@ export async function ensureServiceWorker(): Promise<ServiceWorkerRegistration |
   }
 }
 
+/** Returns whether this browser/device has its own active PushSubscription. */
+export async function hasPushSubscription(): Promise<boolean> {
+  const registration = await ensureServiceWorker();
+  if (!registration) return false;
+  return Boolean(await registration.pushManager.getSubscription());
+}
+
 function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
   const normalized = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
