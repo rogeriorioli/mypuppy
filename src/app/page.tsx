@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { PwaInstallPrompt } from "@/components/pwa/install-prompt";
 
 export default async function LandingPage() {
   const user = await getSessionUser().catch(() => null);
@@ -43,6 +44,7 @@ export default async function LandingPage() {
       <Link href="/signin" className="ghost-button">
         I already have a dog
       </Link>
+      <PwaInstallPrompt />
       <p className="fine-print">No pressure. No deadlines. Just a friend who is always happy to see you.</p>
     </main>
   );

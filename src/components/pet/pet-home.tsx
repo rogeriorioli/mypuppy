@@ -5,6 +5,7 @@ import { getPetMood, type PetAction, type PetEvent, type PetState } from "@/doma
 import { doPetAction } from "@/app/actions/pet";
 import { signOutAction } from "@/app/actions/auth";
 import { enablePushNotifications, disablePushNotifications, hasPushSubscription, isPushSupported } from "@/lib/push-client";
+import { PwaInstallPrompt } from "@/components/pwa/install-prompt";
 import type { PetHomeData } from "@/types/dto";
 
 type Tab = "home" | "memories" | "profile" | "settings";
@@ -384,6 +385,7 @@ function SettingsView({
       <h1>Settings</h1>
       <p className="view-lede">Keep MyPuppy close — always on your terms.</p>
       <div className="settings-list">
+        <PwaInstallPrompt />
         <div className="setting-row">
           <div>
             <strong>Signed in as</strong>
