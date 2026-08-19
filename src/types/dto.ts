@@ -16,6 +16,19 @@ export interface PetHomeData {
   createdAt: string;
   memories: { id: string; text: string; createdAt: string }[];
   reaction: string;
+  notifications: AppNotificationDto[];
+  unreadNotifications: number;
+}
+
+export interface AppNotificationDto {
+  id: string;
+  event: string;
+  title: string;
+  body: string;
+  url: string;
+  readAt: string | null;
+  createdAt: string;
+  petName: string;
 }
 
 export interface PetActionResultData {

@@ -6,9 +6,9 @@ import { doPetAction } from "@/app/actions/pet";
 import { signOutAction } from "@/app/actions/auth";
 import { enablePushNotifications, disablePushNotifications, hasPushSubscription, isPushSupported } from "@/lib/push-client";
 import { PwaInstallPrompt } from "@/components/pwa/install-prompt";
-import type { PetHomeData } from "@/types/dto";
+import type { AppNotificationDto, PetHomeData } from "@/types/dto";
 
-type Tab = "home" | "memories" | "profile" | "settings";
+type Tab = "home" | "memories" | "profile" | "settings" | "notifications";
 
 const ARCHETYPE_META: Record<string, { title: string; description: string; emoji: string }> = {
   caramelo: { title: "The Brazilian Legend", description: "Friendly, clever, and always ready for an adventure.", emoji: "🐕" },
@@ -69,6 +69,8 @@ export function PetHome({ initial, user }: { initial: PetHomeData; user: { email
   const [notifications, setNotifications] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [notificationPromptDismissed, setNotificationPromptDismissed] = useState(false);
+  const [inbox, setInbox] = useState<AppNotificationDto[]>(initial.notifications);
+  const [unreadNotifications, setUnreadNotifications] = useState(initial.unreadNotifications);
   const refreshing = useRef(false);
 
   useEffect(() => {
@@ -148,6 +150,18 @@ export function PetHome({ initial, user }: { initial: PetHomeData; user: { email
     else setNotice("Push is not available here yet, but everything still works in-app.");
   }
 
+  async function markNotificationRead(id: string) {
+    setInbox((current) => current.map((notification) => notification.id === id ? { ...notification, readAt: new Date().toISOString() } : notification));
+    setUnreadNotifications((current) => Math.max(0, current - 1));
+    await fetch("/api/notifications", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+  }
+
+  async function markAllNotificationsRead() {
+    setInbox((current) => current.map((notification) => ({ ...notification, readAt: notification.readAt ?? new Date().toISOString() })));
+    setUnreadNotifications(0);
+    await fetch("/api/notifications", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: "{}" });
+  }
+
   const archetype = ARCHETYPE_META[initial.archetype] ?? ARCHETYPE_META.caramelo;
   const activeEvent = initial.events[0];
   const eventNote = activeEvent ? (EVENT_NOTES[activeEvent] ?? `${initial.name} has something to say.`) : reaction;
@@ -161,6 +175,10 @@ export function PetHome({ initial, user }: { initial: PetHomeData; user: { email
         <div className="header-actions">
           <button className="icon-button" aria-label="Open settings" onClick={() => setTab("settings")}>
             ♧
+          </button>
+          <button className="bell-button" aria-label={`Open notifications${unreadNotifications ? `, ${unreadNotifications} unread` : ""}`} onClick={() => setTab("notifications")}>
+            <span aria-hidden="true">🔔</span>
+            {unreadNotifications > 0 && <b>{unreadNotifications > 9 ? "9+" : unreadNotifications}</b>}
           </button>
           <button className="avatar" aria-label="Open profile" onClick={() => setTab("profile")}>
             {initial.name.slice(0, 1).toUpperCase()}
@@ -221,10 +239,15 @@ export function PetHome({ initial, user }: { initial: PetHomeData; user: { email
             <span className="event-dot" />
             <div>
               <strong>{eventNote}</strong>
-              <small>
-                Walk need {formatValue(state.walkNeed)} · Hygiene {formatValue(state.hygiene)}
-                {sleeping ? " · Sleeping" : ""}
-              </small>
+              <div className="event-stats" aria-label={`${initial.name} full status`}>
+                <span><b>Hunger</b>{formatValue(state.hunger)}</span>
+                <span><b>Happiness</b>{formatValue(state.happiness)}</span>
+                <span><b>Energy</b>{formatValue(state.energy)}</span>
+                <span><b>Affection</b>{formatValue(state.affection)}</span>
+                <span><b>Walk need</b>{formatValue(state.walkNeed)}</span>
+                <span><b>Hygiene</b>{formatValue(state.hygiene)}</span>
+                {sleeping && <span><b>Status</b>Sleeping</span>}
+              </div>
             </div>
           </section>
 
@@ -232,6 +255,7 @@ export function PetHome({ initial, user }: { initial: PetHomeData; user: { email
       )}
 
       {tab === "memories" && <MemoriesView petName={initial.name} memories={memories} />}
+      {tab === "notifications" && <NotificationsView notifications={inbox} unread={unreadNotifications} onRead={markNotificationRead} onReadAll={markAllNotificationsRead} />}
       {tab === "profile" && <ProfileView data={initial} archetypeTitle={archetype.title} />}
       {tab === "settings" && (
         <SettingsView
@@ -320,6 +344,37 @@ function MemoriesView({ petName, memories }: { petName: string; memories: Memory
           <strong>Your first memory is waiting.</strong>
           <p>Give {petName} some Cafuné and make the day a little more special.</p>
         </div>
+      )}
+    </section>
+  );
+}
+
+function NotificationsView({ notifications, unread, onRead, onReadAll }: { notifications: AppNotificationDto[]; unread: number; onRead: (id: string) => void; onReadAll: () => void }) {
+  return (
+    <section className="content-view">
+      <div className="notification-heading">
+        <div>
+          <p className="eyebrow">Your dog&apos;s little signals</p>
+          <h1>Notifications</h1>
+        </div>
+        {unread > 0 && <button className="small-button" onClick={onReadAll}>Mark all read</button>}
+      </div>
+      <p className="view-lede">Push alerts and moments saved here so nothing gets lost.</p>
+      {notifications.length ? (
+        <div className="notification-list">
+          {notifications.map((notification) => (
+            <button key={notification.id} className={`notification-item ${notification.readAt ? "read" : "unread"}`} onClick={() => !notification.readAt && onRead(notification.id)}>
+              <span className="notification-item-dot" aria-hidden="true" />
+              <span>
+                <strong>{notification.title}</strong>
+                <small>{notification.body}</small>
+                <time dateTime={notification.createdAt}>{formatRelative(notification.createdAt)}</time>
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-state"><span aria-hidden="true">🔔</span><strong>No notifications yet.</strong><p>When your dog has something to say, it will stay here.</p></div>
       )}
     </section>
   );

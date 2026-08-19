@@ -53,7 +53,6 @@ export async function deliverEventNotifications(
   state: PetState,
   personality: PetPersonality,
 ): Promise<void> {
-  if (!isPushConfigured()) return;
   const eligible = events.filter((event) => NOTIFIABLE_EVENTS.includes(event));
   if (eligible.length === 0) return;
 
@@ -64,13 +63,10 @@ export async function deliverEventNotifications(
   const archetype = (pet?.archetype ?? "caramelo") as PetArchetype;
   const topTrait: PetTrait = dominantTrait(personality);
 
-  const webpush = await getWebPush();
-  if (!webpush) return;
-
   const subscriptions = await prisma.pushSubscription.findMany({
     where: { userId, active: true },
   });
-  if (subscriptions.length === 0) return;
+  const webpush = isPushConfigured() ? await getWebPush() : null;
 
   for (const event of eligible) {
     const allowed = await notificationAllowed(petId, event);
@@ -94,6 +90,12 @@ export async function deliverEventNotifications(
 
     const payload: PushPayload = { title: "MyPuppy", body, url: "/pet" };
     const payloadJson = JSON.stringify(payload);
+
+    await prisma.appNotification.create({
+      data: { userId, petId, event, title: payload.title, body: payload.body, url: payload.url },
+    });
+
+    if (!webpush || subscriptions.length === 0) continue;
 
     const removals: string[] = [];
     await Promise.allSettled(

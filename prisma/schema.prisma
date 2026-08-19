@@ -18,6 +18,7 @@ model User {
   sessions     Session[]
   subscriptions PushSubscription[]
   notificationPrefs NotificationPreference?
+  notifications AppNotification[]
 }
 
 model Session {
@@ -44,6 +45,7 @@ model Pet {
   actions     PetActionRecord[]
   events      PetEventRecord[]
   memories    PetMemory[]
+  notifications AppNotification[]
 
   @@index([userId])
 }
@@ -115,6 +117,24 @@ model NotificationPreference {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   enabled   Boolean  @default(false)
   updatedAt DateTime @updatedAt
+}
+
+model AppNotification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  petId     String
+  pet       Pet       @relation(fields: [petId], references: [id], onDelete: Cascade)
+  event     String
+  title     String
+  body      String
+  url       String    @default("/pet")
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@index([petId, createdAt])
 }
 
 model ReactionCache {

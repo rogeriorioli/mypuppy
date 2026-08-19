@@ -277,6 +277,17 @@ export interface PetHomeDataDto {
   createdAt: string;
   memories: { id: string; text: string; createdAt: string }[];
   reaction: string;
+  notifications: {
+    id: string;
+    event: string;
+    title: string;
+    body: string;
+    url: string;
+    readAt: string | null;
+    createdAt: string;
+    petName: string;
+  }[];
+  unreadNotifications: number;
 }
 
 /**
@@ -308,6 +319,12 @@ export async function getPetHomeData(userId: string): Promise<PetHomeDataDto | n
     orderBy: { createdAt: "desc" },
     take: 30,
     select: { id: true, text: true, createdAt: true },
+  });
+  const storedNotifications = await prisma.appNotification.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    select: { id: true, event: true, title: true, body: true, url: true, readAt: true, createdAt: true, pet: { select: { name: true } } },
   });
 
   let reaction = `Welcome back. ${pet.name} is here, and today is officially a good day.`;
@@ -345,6 +362,17 @@ export async function getPetHomeData(userId: string): Promise<PetHomeDataDto | n
     createdAt: pet.createdAt.toISOString(),
     memories: memories.map((memory) => ({ id: memory.id, text: memory.text, createdAt: memory.createdAt.toISOString() })),
     reaction,
+    notifications: storedNotifications.map((notification) => ({
+      id: notification.id,
+      event: notification.event,
+      title: notification.title,
+      body: notification.body,
+      url: notification.url,
+      readAt: notification.readAt?.toISOString() ?? null,
+      createdAt: notification.createdAt.toISOString(),
+      petName: notification.pet.name,
+    })),
+    unreadNotifications: storedNotifications.filter((notification) => notification.readAt === null).length,
   };
 }
 
